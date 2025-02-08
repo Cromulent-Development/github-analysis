@@ -1,0 +1,8 @@
+pyproject.toml
+poetry.lock
+.coverage
+readme.md
+**pycache**/
+data/
+\*.h5
+.idea/

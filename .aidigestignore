@@ -6,3 +6,5 @@ readme.md
 data/
 \*.h5
 .idea/
+.aidigestignore
+.gitignore

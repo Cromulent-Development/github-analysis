@@ -1,14 +1,17 @@
 import enum
 
 from sqlalchemy import (
+    ARRAY,
     BigInteger,
     Column,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
     Text,
+    JSON,
 )
 from sqlalchemy.orm import relationship
 
@@ -39,6 +42,8 @@ class PullRequest(Base):
     diffs = relationship(
         "PRDiff", back_populates="pull_request", cascade="all, delete-orphan"
     )
+
+    analysis = relationship("PRAnalysis", back_populates="pull_request", uselist=False)
 
 
 class PRComment(Base):
@@ -86,3 +91,18 @@ class DiffHunk(Base):
     )
 
     diff = relationship("PRDiff", back_populates="hunks")
+
+
+class PRAnalysis(Base):
+    __tablename__ = "pr_analyses"
+
+    id = Column(Integer, primary_key=True)
+    pr_id = Column(
+        Integer, ForeignKey("pull_requests.id", ondelete="CASCADE"), nullable=False
+    )
+    embedding = Column(ARRAY(Float))  # Store the vector embedding
+    summary = Column(String)  # Store the AI-generated summary
+    metadata = Column(JSON)  # Store any additional structured data from AI analysis
+
+    # Relationship back to PR
+    pull_request = relationship("PullRequest", back_populates="analysis")

@@ -1,13 +1,13 @@
 from fastapi import FastAPI, Depends
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from github_analysis.db.config import  get_db_session
+from github_analysis.dependencies import get_github_service
 from github_analysis.services.github import GitHubService
-from github_analysis.config import settings
+
 
 app = FastAPI(title="GitHub Analysis")
-
-
-# Define dependency for GitHubService
-def get_github_service() -> GitHubService:
-    return GitHubService(settings.GITHUB_TOKEN)
 
 
 @app.get("/health")
@@ -29,3 +29,19 @@ async def test_github(
         "comments": comments[:2] if comments else [],
         "diff_preview": diff[:500] if diff else ""
     }
+
+
+@app.get("/health/db")
+async def test_db_connection(db: AsyncSession = Depends(get_db_session)):
+    try:
+        result = await db.execute(text("SELECT 1"))
+        db_status = result.scalar()
+        return {
+            "status": "Database connected successfully",
+            "db_response": db_status
+        }
+    except Exception as e:
+        return {
+            "status": "Database connection failed",
+            "error": str(e)
+        }

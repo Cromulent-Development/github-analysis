@@ -1,27 +1,69 @@
-import os
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.asyncio import async_sessionmaker
+import contextlib
+from typing import Any, AsyncIterator
 
-# Default to docker-compose database URL if not overridden
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://github_analysis:github_analysis@localhost/github_analysis"
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import declarative_base
+from github_analysis.config import settings
+
+Base = declarative_base()
+
+
+class DatabaseSessionManager:
+    def __init__(self, database_url: str, engine_kwargs: dict[str, Any] = {}):
+        self._engine = create_async_engine(database_url, **engine_kwargs)
+        self._sessionmaker = async_sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=self._engine
+        )
+
+    async def close(self):
+        if self._engine is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+        await self._engine.dispose()
+
+        self._engine = None
+        self._sessionmaker = None
+
+    @contextlib.asynccontextmanager
+    async def connect(self) -> AsyncIterator[AsyncConnection]:
+        if self._engine is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+
+        async with self._engine.begin() as connection:
+            try:
+                yield connection
+            except Exception:
+                await connection.rollback()
+                raise
+
+    @contextlib.asynccontextmanager
+    async def session(self) -> AsyncIterator[AsyncSession]:
+        if self._sessionmaker is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+
+        session = self._sessionmaker()
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+
+# Initialize the session manager with settings
+sessionmanager = DatabaseSessionManager(
+    settings.database_url, {"echo": settings.echo_sql}
 )
 
-# Create async engine
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=True,  # Set to False in production
-)
-
-# Create async session factory
-async_session = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
 
 # Dependency for FastAPI endpoints
-async def get_db():
-    async with async_session() as session:
+async def get_db_session():
+    async with sessionmanager.session() as session:
         yield session

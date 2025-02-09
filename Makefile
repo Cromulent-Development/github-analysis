@@ -30,3 +30,17 @@ install:
 
 # Combined commands (Run Docker and App together)
 dev: up run
+
+init-db:
+	poetry add alembic
+	poetry run alembic init migrations
+
+
+db-migrate:
+	poetry run alembic upgrade head
+
+db-downgrade:
+	poetry run alembic downgrade -1
+
+db-revision:
+	poetry run alembic revision --autogenerate -m "$(message)"

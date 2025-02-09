@@ -16,6 +16,8 @@ sqlalchemy = {extras = ["asyncpg"], version = "^2.0.38"}
 aiohttp = "^3.11.12"
 python-dotenv = "^1.0.1"
 pydantic-settings = "^2.7.1"
+asyncpg = "^0.30.0"
+alembic = "^1.14.1"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.0"

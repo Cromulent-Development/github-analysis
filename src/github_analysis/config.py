@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     db_host: str = "localhost"
     db_port: str = "5432"
     db_name: str = "github_analysis"
+    echo_sql: bool = False
 
     @property
     def database_url(self) -> str:

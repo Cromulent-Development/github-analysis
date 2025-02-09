@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import declarative_base
+
 from github_analysis.config import settings
 
 Base = declarative_base()
@@ -17,9 +18,7 @@ class DatabaseSessionManager:
     def __init__(self, database_url: str, engine_kwargs: dict[str, Any] = {}):
         self._engine = create_async_engine(database_url, **engine_kwargs)
         self._sessionmaker = async_sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self._engine
+            autocommit=False, autoflush=False, bind=self._engine
         )
 
     async def close(self):

@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class PRCommentSchema(BaseModel):
@@ -23,8 +24,12 @@ class PullRequestSchema(BaseModel):
     updated_at: datetime = Field(description="PR last update timestamp")
     state: str = Field(description="PR state (open/closed/merged)")
     user_login: str = Field(description="PR author's GitHub username")
-    comments: List[PRCommentSchema] = Field(default_factory=list, description="List of PR comments")
-    diffs: List[PRDiffSchema] = Field(default_factory=list, description="List of file diffs")
+    comments: List[PRCommentSchema] = Field(
+        default_factory=list, description="List of PR comments"
+    )
+    diffs: List[PRDiffSchema] = Field(
+        default_factory=list, description="List of file diffs"
+    )
 
 
 class PRListResponse(BaseModel):

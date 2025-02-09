@@ -1,6 +1,11 @@
-.PHONY: up down logs ps clean run test install dev
+.PHONY: up down logs ps clean run test install dev \
+        init-db db-migrate db-downgrade db-revision \
+        format lint check
 
-# Docker commands
+# ────────────────────────────
+# Docker Commands
+# ────────────────────────────
+
 up:
 	docker compose up -d
 
@@ -16,25 +21,28 @@ ps:
 clean: down
 	docker compose down -v --remove-orphans
 
-# Application commands (Use Poetry for running the app)
+# ────────────────────────────
+# Application Commands
+# ────────────────────────────
+
 run:
 	poetry run uvicorn github_analysis.main:app --reload
 
-# Development commands (Use Poetry for testing)
 test:
 	poetry run pytest
 
-# Install dependencies using Poetry
 install:
 	poetry install
 
-# Combined commands (Run Docker and App together)
 dev: up run
+
+# ────────────────────────────
+# Database Commands (Alembic)
+# ────────────────────────────
 
 init-db:
 	poetry add alembic
 	poetry run alembic init migrations
-
 
 db-migrate:
 	poetry run alembic upgrade head
@@ -44,3 +52,17 @@ db-downgrade:
 
 db-revision:
 	poetry run alembic revision --autogenerate -m "$(message)"
+
+# ────────────────────────────
+# Code Quality Commands
+# ────────────────────────────
+
+format:
+	poetry run black .
+	poetry run isort .
+
+lint:
+	poetry run flake8 .
+	poetry run mypy .
+
+check: format lint test

@@ -1,14 +1,11 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from github_analysis.db.config import  get_db_session
-from github_analysis.dependencies import get_github_service
-from github_analysis.services.github import GitHubService
-
+from github_analysis.db.config import get_db_session
+from github_analysis.dependencies import get_github_pr_service
+from github_analysis.services.github_service import GitHubService
 
 app = FastAPI(title="GitHub Analysis")
-
 
 @app.get("/health")
 async def health_check():
@@ -17,21 +14,17 @@ async def health_check():
 
 @app.get("/test-github")
 async def test_github(
-        github_service: GitHubService = Depends(get_github_service)
+        db: AsyncSession = Depends(get_db_session),
+        github_pr_service: GitHubService = Depends(get_github_pr_service)
 ):
-    """Temporary endpoint to test GitHub API responses"""
-    prs = await github_service.get_pull_requests("python", "cpython", state="closed", per_page=1)
-    comments = await github_service.get_pr_comments("python", "cpython", prs[0]["number"])
-    diff = await github_service.get_pr_diff("python", "cpython", prs[0]["number"])
-
+    """Temporary endpoint to test GitHub API responses and storage"""
+    results = await github_pr_service.fetch_and_store_prs("python", "cpython", limit=5)
     return {
-        "pull_request": prs[0],
-        "comments": comments[:2] if comments else [],
-        "diff_preview": diff[:500] if diff else ""
+        "results": results,
+        "message": "Data fetch and store attempted"
     }
 
-
-@app.get("/health/db")
+@app.get("/health/db", response_model=None)  # Avoid response model validation here
 async def test_db_connection(db: AsyncSession = Depends(get_db_session)):
     try:
         result = await db.execute(text("SELECT 1"))

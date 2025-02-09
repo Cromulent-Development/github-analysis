@@ -1,7 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
-from datetime import datetime
-
+from datetime import datetime, timezone
 from .base import Base
 
 
@@ -9,26 +8,25 @@ class PullRequest(Base):
     __tablename__ = "pull_requests"
 
     id = Column(Integer, primary_key=True)
-    github_id = Column(Integer, unique=True, nullable=False)  # Need this to avoid duplicates
-    number = Column(Integer, nullable=False)  # Needed for GitHub API calls
-    title = Column(String, nullable=False)  # Important for context
-    body = Column(String)  # Important for context
-    created_at = Column(DateTime, nullable=False)  # Useful for temporal analysis
+    github_id = Column(BigInteger, unique=True, nullable=False)  # Avoid duplicates, supports large IDs
+    number = Column(Integer, nullable=False)  # PR number from GitHub
+    title = Column(String, nullable=False)  # Title of the PR
+    body = Column(String)  # Body/description of the PR
+    created_at = Column(DateTime(timezone=True), nullable=False)  # Supports timezone-aware datetimes
 
-    # Relationships for what we really care about
-    comments = relationship("PRComment", back_populates="pull_request")
-    diffs = relationship("PRDiff", back_populates="pull_request")
-    # We'll add AI summary fields later
+    # Relationships
+    comments = relationship("PRComment", back_populates="pull_request", cascade="all, delete-orphan")
+    diffs = relationship("PRDiff", back_populates="pull_request", cascade="all, delete-orphan")
 
 
 class PRComment(Base):
     __tablename__ = "pr_comments"
 
     id = Column(Integer, primary_key=True)
-    github_id = Column(Integer, unique=True, nullable=False)
-    body = Column(String, nullable=False)  # The actual comment content we want to analyze
-    user_login = Column(String, nullable=False)  # Might be useful for analysis context
-    pr_id = Column(Integer, ForeignKey("pull_requests.id"), nullable=False)
+    github_id = Column(BigInteger, unique=True, nullable=False)
+    body = Column(String, nullable=False)  # Comment content
+    user_login = Column(String, nullable=False)  # User who posted the comment
+    pr_id = Column(Integer, ForeignKey("pull_requests.id", ondelete="CASCADE"), nullable=False)
 
     pull_request = relationship("PullRequest", back_populates="comments")
 
@@ -37,8 +35,8 @@ class PRDiff(Base):
     __tablename__ = "pr_diffs"
 
     id = Column(Integer, primary_key=True)
-    file_path = Column(String, nullable=False)  # Which file was changed
-    content = Column(String, nullable=False)  # The actual changes we want to analyze
-    pr_id = Column(Integer, ForeignKey("pull_requests.id"), nullable=False)
+    file_path = Column(String, nullable=False)  # File path of the diff
+    content = Column(String, nullable=False)  # Content of the diff
+    pr_id = Column(Integer, ForeignKey("pull_requests.id", ondelete="CASCADE"), nullable=False)
 
     pull_request = relationship("PullRequest", back_populates="diffs")

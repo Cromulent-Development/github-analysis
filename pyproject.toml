@@ -9,9 +9,9 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.109.0"
-uvicorn = "^0.27.0"
-httpx = "^0.26.0"
+fastapi = "^0.115.8"
+uvicorn = "^0.34.0"
+httpx = "^0.28.1"
 sqlalchemy = {extras = ["asyncpg"], version = "^2.0.38"}
 aiohttp = "^3.11.12"
 python-dotenv = "^1.0.1"

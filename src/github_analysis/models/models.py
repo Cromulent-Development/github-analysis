@@ -102,7 +102,9 @@ class PRAnalysis(Base):
     )
     embedding = Column(ARRAY(Float))  # Store the vector embedding
     summary = Column(String)  # Store the AI-generated summary
-    metadata = Column(JSON)  # Store any additional structured data from AI analysis
+    analysis_metadata = Column(
+        JSON
+    )  # Store any additional structured data from AI analysis
 
     # Relationship back to PR
     pull_request = relationship("PullRequest", back_populates="analysis")

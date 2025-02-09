@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     db_name: str = "github_analysis"
     echo_sql: bool = False
 
+    model_config = SettingsConfigDict(env_file=DOTENV_PATH, env_file_encoding="utf-8")
+
     @property
     def database_url(self) -> str:
         return f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"

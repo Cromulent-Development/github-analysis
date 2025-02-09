@@ -3,7 +3,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from github_analysis.db.config import get_db_session
-from github_analysis.dependencies import get_github_pr_service, get_analysis_service
+from github_analysis.dependencies import get_analysis_service, get_github_service
 from github_analysis.services.analysis_service import AnalysisService
 from github_analysis.services.github_service import GitHubService
 
@@ -18,7 +18,7 @@ async def health_check():
 @app.get("/test-github")
 async def test_github(
     db: AsyncSession = Depends(get_db_session),
-    github_pr_service: GitHubService = Depends(get_github_pr_service),
+    github_pr_service: GitHubService = Depends(get_github_service),
 ):
     """Temporary endpoint to test GitHub API responses and storage"""
     results = await github_pr_service.fetch_and_store_prs("python", "cpython", limit=5)

@@ -1,18 +1,19 @@
 """
 
-Revision ID: c05b21796725
+Revision ID: 0868bec25e16
 Revises:
-Create Date: 2025-02-09 09:10:16.415567
+Create Date: 2025-02-09 11:51:36.595146
 
 """
 
 from typing import Sequence, Union
 
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
+
 
 # revision identifiers, used by Alembic.
-revision: str = "c05b21796725"
+revision: str = "0868bec25e16"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -30,6 +31,16 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("github_id"),
+    )
+    op.create_table(
+        "pr_analyses",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("pr_id", sa.Integer(), nullable=False),
+        sa.Column("embedding", sa.ARRAY(sa.Float()), nullable=True),
+        sa.Column("summary", sa.String(), nullable=True),
+        sa.Column("analysis_metadata", sa.JSON(), nullable=True),
+        sa.ForeignKeyConstraint(["pr_id"], ["pull_requests.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
         "pr_comments",
@@ -76,5 +87,6 @@ def downgrade() -> None:
     op.drop_table("diff_hunks")
     op.drop_table("pr_diffs")
     op.drop_table("pr_comments")
+    op.drop_table("pr_analyses")
     op.drop_table("pull_requests")
     # ### end Alembic commands ###

@@ -2,6 +2,8 @@ import json
 from typing import Dict, List
 import openai
 from openai import AsyncOpenAI
+from openai.types import ResponseFormatJSONObject
+from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat.completion_create_params import ResponseFormat
 
 
@@ -61,32 +63,29 @@ Format the response as a JSON object with these keys:
     async def analyze_pr(self, pr_context: Dict) -> Dict:
         """Get AI analysis of the PR"""
         prompt = self._create_analysis_prompt(pr_context)
-
-        from openai.types.chat import (
-            ChatCompletionSystemMessageParam,
-            ChatCompletionUserMessageParam,
-        )
+        messages = [
+            {
+                "role": "system",
+                "content": "You are an expert code reviewer and software engineer. Analyze pull requests and provide structured insights about code changes.",
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ]
 
         response = await self.client.chat.completions.create(
-            model="gpt-4-0125-preview",  # Using latest GPT-4
-            response_format=ResponseFormat(type="json"),
-            messages=[
-                ChatCompletionSystemMessageParam(
-                    role="system",
-                    content="You are an expert code reviewer and software engineer. Analyze pull requests and provide structured insights about code changes.",
-                ),
-                ChatCompletionUserMessageParam(role="user", content=prompt),
-            ],
-            temperature=0.1,  # Keep it focused and consistent
+            model="gpt-4",
+            messages=messages,
+            temperature=0.1,
         )
 
-        # Parse the response - it will be in JSON format
         try:
             if response.choices[0].message.content is None:
                 raise ValueError("No content in response")
             analysis = json.loads(response.choices[0].message.content)
             return analysis
-        except Exception as e:
+        except json.JSONDecodeError as e:
             raise ValueError(f"Failed to parse AI response: {e}")
 
     async def create_embeddings(self, analysis: Dict) -> List[float]:

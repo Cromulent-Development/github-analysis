@@ -43,14 +43,12 @@ async def compare_embeddings(openai_key: str):
     ai_service = AIService(api_key=openai_key)
     embedding_service = EmbeddingService(api_key=openai_key)
 
-    # Load all test PRs
     test_prs = []
     for pr_file in os.listdir("test_data/prs"):
         if pr_file.endswith(".json"):
             pr_data = load_test_pr(f"test_data/prs/{pr_file}")
             test_prs.append(prepare_pr_context(pr_data))
 
-    # Process each PR with both approaches
     results = {EmbeddingType.AI_SUMMARY: [], EmbeddingType.RAW_DIFF: []}
 
     for pr in test_prs:

@@ -75,9 +75,10 @@ Format the response as a JSON object with these keys:
         ]
 
         response = await self.client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4-turbo-preview",
             messages=messages,
             temperature=0.1,
+            response_format={"type": "json_object"},
         )
 
         try:

@@ -1,0 +1,47 @@
+{
+    "github_id": 1006,
+    "number": 6,
+    "title": "Add caching to improve API performance",
+    "body": "Added Redis caching layer to frequently accessed API endpoints to reduce database load and improve response times.",
+    "created_at": "2024-02-09T17:00:00Z",
+    "comments": [
+        {
+            "github_id": 2011,
+            "body": "Make sure to set appropriate TTL for cached items",
+            "user_login": "reviewer1"
+        },
+        {
+            "github_id": 2012,
+            "body": "Should we add cache invalidation on updates?",
+            "user_login": "reviewer2"
+        }
+    ],
+    "diffs": [
+        {
+            "file_path": "src/services/cache.py",
+            "change_type": "add",
+            "hunks": [
+                {
+                    "old_start": 0,
+                    "old_lines": 0,
+                    "new_start": 1,
+                    "new_lines": 20,
+                    "content": "+from typing import Any, Optional\n+import json\n+from redis import Redis\n+\n+class CacheService:\n+    def __init__(self, redis_client: Redis):\n+        self.redis = redis_client\n+\n+    async def get(self, key: str) -> Optional[Any]:\n+        value = await self.redis.get(key)\n+        return json.loads(value) if value else None\n+\n+    async def set(\n+        self,\n+        key: str,\n+        value: Any,\n+        ttl_seconds: int = 3600\n+    ) -> None:\n+        await self.redis.set(key, json.dumps(value), ex=ttl_seconds)\n+        return None"
+                }
+            ]
+        },
+        {
+            "file_path": "src/api/endpoints.py",
+            "change_type": "modify",
+            "hunks": [
+                {
+                    "old_start": 25,
+                    "old_lines": 4,
+                    "new_start": 25,
+                    "new_lines": 9,
+                    "content": " @router.get(\"/users/{user_id}\")\n async def get_user(user_id: int) -> Dict:\n-    user = await user_service.get_user(user_id)\n-    return user\n+    cache_key = f\"user:{user_id}\"\n+    \n+    # Try cache first\n+    if cached := await cache_service.get(cache_key):\n+        return cached\n+    \n+    # Cache miss, get from DB and cache\n+    user = await user_service.get_user(user_id)\n+    await cache_service.set(cache_key, user)"
+                }
+            ]
+        }
+    ]
+}

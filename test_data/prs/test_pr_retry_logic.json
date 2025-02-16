@@ -1,0 +1,47 @@
+{
+    "github_id": 1005,
+    "number": 5,
+    "title": "Add retry logic to failed operations",
+    "body": "Added retry mechanism with exponential backoff to handle transient failures gracefully.",
+    "created_at": "2024-02-09T16:00:00Z",
+    "comments": [
+        {
+            "github_id": 2009,
+            "body": "Good error handling approach with retries",
+            "user_login": "reviewer2"
+        },
+        {
+            "github_id": 2010,
+            "body": "Consider adding jitter to avoid thundering herd",
+            "user_login": "reviewer1"
+        }
+    ],
+    "diffs": [
+        {
+            "file_path": "src/utils/retry.py",
+            "change_type": "add",
+            "hunks": [
+                {
+                    "old_start": 0,
+                    "old_lines": 0,
+                    "new_start": 1,
+                    "new_lines": 25,
+                    "content": "+import asyncio\n+import logging\n+from typing import TypeVar, Callable, Any\n+from functools import wraps\n+\n+T = TypeVar('T')\n+logger = logging.getLogger(__name__)\n+\n+def with_retry(max_attempts: int = 3, base_delay: float = 1.0):\n+    def decorator(func: Callable[..., T]) -> Callable[..., T]:\n+        @wraps(func)\n+        async def wrapper(*args, **kwargs) -> T:\n+            last_error = None\n+            for attempt in range(max_attempts):\n+                try:\n+                    return await func(*args, **kwargs)\n+                except Exception as e:\n+                    last_error = e\n+                    if attempt + 1 < max_attempts:\n+                        delay = base_delay * (2 ** attempt)\n+                        logger.warning(\n+                            f\"Attempt {attempt + 1} failed: {e}. \"\n+                            f\"Retrying in {delay} seconds...\"\n+                        )\n+                        await asyncio.sleep(delay)\n+            logger.error(f\"All {max_attempts} attempts failed\")\n+            raise last_error\n+        return wrapper\n+    return decorator"
+                }
+            ]
+        },
+        {
+            "file_path": "src/services/external_client.py",
+            "change_type": "modify",
+            "hunks": [
+                {
+                    "old_start": 15,
+                    "old_lines": 1,
+                    "new_start": 15,
+                    "new_lines": 2,
+                    "content": " from typing import Dict\n+from src.utils.retry import with_retry\n \n @with_retry(max_attempts=3)\n async def call_external_api(self, endpoint: str, data: Dict) -> Dict:"
+                }
+            ]
+        }
+    ]
+}

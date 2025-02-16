@@ -1,0 +1,41 @@
+{
+    "github_id": 1001,
+    "number": 1,
+    "title": "Add error handling to database operations",
+    "body": "Added proper error handling and logging to database operations to improve reliability and debugging.",
+    "created_at": "2024-02-09T12:00:00Z",
+    "comments": [
+        {
+            "github_id": 2001,
+            "body": "Consider adding retries for transient failures",
+            "user_login": "reviewer1"
+        },
+        {
+            "github_id": 2002,
+            "body": "Good catch, I'll add retry logic in a follow-up PR",
+            "user_login": "author1"
+        }
+    ],
+    "diffs": [
+        {
+            "file_path": "src/database.py",
+            "change_type": "modify",
+            "hunks": [
+                {
+                    "old_start": 10,
+                    "old_lines": 5,
+                    "new_start": 10,
+                    "new_lines": 12,
+                    "content": " async def execute_query(self, query: str, params: Dict = None) -> Any:\n-    result = await self.connection.execute(query, params)\n-    return result\n+    try:\n+        result = await self.connection.execute(query, params)\n+        return result\n+    except ConnectionError as e:\n+        logger.error(f\"Database connection error: {e}\")\n+        raise DatabaseError(\"Failed to connect to database\") from e\n+    except QueryError as e:\n+        logger.error(f\"Query execution error: {e}\")\n+        raise DatabaseError(\"Failed to execute query\") from e"
+                },
+                {
+                    "old_start": 25,
+                    "old_lines": 4,
+                    "new_start": 32,
+                    "new_lines": 9,
+                    "content": " async def get_record(self, table: str, id: int) -> Optional[Dict]:\n-    query = f\"SELECT * FROM {table} WHERE id = $1\"\n-    result = await self.execute_query(query, [id])\n-    return result.first() if result else None\n+    try:\n+        query = f\"SELECT * FROM {table} WHERE id = $1\"\n+        result = await self.execute_query(query, [id])\n+        return result.first() if result else None\n+    except DatabaseError as e:\n+        logger.error(f\"Failed to get record from {table}: {e}\")\n+        raise"
+                }
+            ]
+        }
+    ]
+}

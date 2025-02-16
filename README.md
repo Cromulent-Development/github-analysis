@@ -104,6 +104,33 @@ The application uses environment variables for configuration:
 - `DB_PORT` - Database port (default: 5432)
 - `DB_NAME` - Database name (default: github_analysis)
 
+## Embedding Comparison Results
+
+The project uses two approaches for finding similar pull requests:
+
+### AI Summary Approach
+Uses GPT-4 to generate a structured summary of the PR and then creates embeddings from this summary. Results show:
+- Better at capturing semantic relationships between PRs
+- Higher similarity scores for conceptually related changes
+- Example findings:
+  - Error handling PRs (#1, #2, #4) showed strong similarities (0.63-0.72)
+  - Performance improvements (#5, #6) were correctly grouped
+  - Feature additions (#3) were properly distinguished from error handling changes
+
+### Raw Diff Approach
+Creates embeddings directly from the code changes. Results show:
+- Better at capturing syntactic similarities
+- More sensitive to specific code patterns
+- Example findings:
+  - Error handling PRs showed moderate similarity (0.31-0.53)
+  - External service changes (#4, #5) showed strong similarity (0.61)
+  - API endpoint modifications (#2, #6) were recognized as related (0.57)
+
+### Key Insights
+- AI Summary approach is better at understanding the high-level purpose of changes
+- Raw Diff approach is better at finding PRs with similar code patterns
+- Combining both approaches could provide more comprehensive PR similarity analysis
+
 ## Running Tests
 ```bash
 make test

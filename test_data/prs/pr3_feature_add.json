@@ -1,0 +1,60 @@
+{
+    "github_id": 1003,
+    "number": 3,
+    "title": "Add user search functionality",
+    "body": "Added new endpoint to search users by name, email, or other attributes with pagination support.",
+    "created_at": "2024-02-09T14:00:00Z",
+    "comments": [
+        {
+            "github_id": 2005,
+            "body": "Consider adding an index for better search performance",
+            "user_login": "reviewer1"
+        },
+        {
+            "github_id": 2006,
+            "body": "Added index on commonly searched fields",
+            "user_login": "author1"
+        }
+    ],
+    "diffs": [
+        {
+            "file_path": "src/api/endpoints.py",
+            "change_type": "modify",
+            "hunks": [
+                {
+                    "old_start": 45,
+                    "old_lines": 1,
+                    "new_start": 45,
+                    "new_lines": 15,
+                    "content": " from typing import Dict, List, Optional\n+from fastapi import Query\n+\n+@router.get(\"/users/search\")\n+async def search_users(\n+    query: str = Query(..., min_length=2),\n+    fields: List[str] = Query(default=[\"name\", \"email\"]),\n+    page: int = Query(default=1, gt=0),\n+    page_size: int = Query(default=20, gt=0, le=100)\n+) -> Dict:\n+    offset = (page - 1) * page_size\n+    users = await user_service.search_users(\n+        query=query,\n+        fields=fields,\n+        offset=offset,\n+        limit=page_size\n+    )\n+    return {\n+        \"users\": users,\n+        \"page\": page,\n+        \"page_size\": page_size\n+    }"
+                }
+            ]
+        },
+        {
+            "file_path": "src/services/user_service.py",
+            "change_type": "modify",
+            "hunks": [
+                {
+                    "old_start": 60,
+                    "old_lines": 1,
+                    "new_start": 60,
+                    "new_lines": 20,
+                    "content": " from typing import List, Dict\n+\n+async def search_users(\n+    self,\n+    query: str,\n+    fields: List[str],\n+    offset: int = 0,\n+    limit: int = 20\n+) -> List[Dict]:\n+    conditions = []\n+    params = []\n+    for field in fields:\n+        conditions.append(f\"{field} ILIKE ${len(params) + 1}\")\n+        params.append(f\"%{query}%\")\n+\n+    where_clause = \" OR \".join(conditions)\n+    sql = f\"\"\"SELECT * FROM users\n+             WHERE {where_clause}\n+             LIMIT ${len(params) + 1} OFFSET ${len(params) + 2}\"\"\"\n+    params.extend([limit, offset])\n+\n+    return await self.db.fetch_all(sql, *params)"
+                }
+            ]
+        },
+        {
+            "file_path": "migrations/versions/add_user_search_indexes.py",
+            "change_type": "add",
+            "hunks": [
+                {
+                    "old_start": 0,
+                    "old_lines": 0,
+                    "new_start": 1,
+                    "new_lines": 12,
+                    "content": "+\"\"\"add user search indexes\n+\n+Revision ID: abc123def456\n+\"\"\"\n+\n+def upgrade():\n+    op.create_index('ix_users_name', 'users', ['name'])\n+    op.create_index('ix_users_email', 'users', ['email'])\n+\n+def downgrade():\n+    op.drop_index('ix_users_name')\n+    op.drop_index('ix_users_email')"
+                }
+            ]
+        }
+    ]
+}

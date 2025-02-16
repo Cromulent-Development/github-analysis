@@ -18,6 +18,8 @@ python-dotenv = "^1.0.1"
 pydantic-settings = "^2.7.1"
 asyncpg = "^0.30.0"
 alembic = "^1.14.1"
+qdrant-client = "^1.13.2"
+openai = "^1.61.1"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.0"
